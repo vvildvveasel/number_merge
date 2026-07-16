@@ -1,0 +1,12 @@
+# Build output
+target/
+dist/
+out/
+*.class
+
+# IDE
+.idea/
+*.iml
+
+# Claude Code local state
+.claude/

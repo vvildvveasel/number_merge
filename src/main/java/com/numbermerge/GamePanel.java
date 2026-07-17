@@ -55,6 +55,7 @@ public class GamePanel extends JPanel {
     private Consumer<Long> onScoreChange;
     private Runnable onGameOver;
     private Consumer<Boolean> onUndoAvailabilityChange;
+    private Consumer<String> onChainPreviewChange;
     private Board.Snapshot undoSnapshot;
 
     private enum Phase { MERGE_FADE, DROP }
@@ -86,6 +87,7 @@ public class GamePanel extends JPanel {
                 dragging = true;
                 chain.clear();
                 chain.add(p);
+                updateChainPreview();
                 repaint();
             }
 
@@ -97,6 +99,7 @@ public class GamePanel extends JPanel {
                     startMergeAnimation(new ArrayList<>(chain));
                 }
                 chain.clear();
+                updateChainPreview();
                 repaint();
             }
         };
@@ -121,15 +124,27 @@ public class GamePanel extends JPanel {
 
                 if (chain.size() >= 2 && chain.get(chain.size() - 2).equals(p)) {
                     chain.remove(chain.size() - 1);
+                    updateChainPreview();
                     repaint();
                     return;
                 }
                 if (board.canExtend(chain, p)) {
                     chain.add(p);
+                    updateChainPreview();
                     repaint();
                 }
             }
         });
+    }
+
+    private void updateChainPreview() {
+        if (onChainPreviewChange == null) return;
+        if (chain.size() >= 2) {
+            int previewRung = board.previewMergeRungIndex(chain);
+            onChainPreviewChange.accept(Ladder.label(previewRung));
+        } else {
+            onChainPreviewChange.accept(null);
+        }
     }
 
     public void setOnScoreChange(Consumer<Long> listener) {
@@ -138,6 +153,10 @@ public class GamePanel extends JPanel {
 
     public void setOnGameOver(Runnable listener) {
         this.onGameOver = listener;
+    }
+
+    public void setOnChainPreviewChange(Consumer<String> listener) {
+        this.onChainPreviewChange = listener;
     }
 
     public void setOnUndoAvailabilityChange(Consumer<Boolean> listener) {
@@ -149,6 +168,7 @@ public class GamePanel extends JPanel {
         if (animating || undoSnapshot == null) return;
         dragging = false;
         chain.clear();
+        updateChainPreview();
         board.restoreSnapshot(undoSnapshot);
         undoSnapshot = null;
         notifyUndoAvailability(false);

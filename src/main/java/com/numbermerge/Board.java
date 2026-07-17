@@ -92,6 +92,15 @@ public class Board {
         return candidateRung == prevRung || candidateRung == prevRung + 1;
     }
 
+    /** Computes what merging this chain would produce, without mutating the board. */
+    public int previewMergeRungIndex(List<Pos> chain) {
+        long sum = 0;
+        for (Pos p : chain) {
+            sum += grid[p.row][p.col].value();
+        }
+        return Ladder.rungIndexForValue(sum);
+    }
+
     /**
      * Sums the chain's values and rounds to the nearest legal rung, clears every cell in
      * the chain except the last (which gets the merged result), then - if that result is a
@@ -99,11 +108,7 @@ public class Board {
      * window. Finally applies gravity and refills empty cells from the top.
      */
     public MergeResult commitMerge(List<Pos> chain) {
-        long sum = 0;
-        for (Pos p : chain) {
-            sum += grid[p.row][p.col].value();
-        }
-        int resultRung = Ladder.rungIndexForValue(sum);
+        int resultRung = previewMergeRungIndex(chain);
 
         for (int i = 0; i < chain.size() - 1; i++) {
             Pos p = chain.get(i);

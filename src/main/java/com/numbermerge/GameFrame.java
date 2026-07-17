@@ -18,6 +18,7 @@ public class GameFrame extends JFrame {
     private GamePanel gamePanel;
     private final JLabel scoreLabel = new JLabel("Score: 0");
     private final JLabel bestLabel = new JLabel("Best: 0");
+    private final JLabel runningTotalLabel = new JLabel(" ");
     private final JButton backButton = new JButton("Back");
     private long bestScore = 0;
 
@@ -60,7 +61,16 @@ public class GameFrame extends JFrame {
         JLabel title = new JLabel("Number Merge", SwingConstants.CENTER);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 22f));
         title.setForeground(Color.WHITE);
-        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+        runningTotalLabel.setFont(runningTotalLabel.getFont().deriveFont(Font.BOLD, 16f));
+        runningTotalLabel.setForeground(new Color(0xFF, 0xD1, 0x66));
+        runningTotalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        JPanel titleRow = new JPanel(new BorderLayout());
+        titleRow.setOpaque(false);
+        titleRow.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        titleRow.add(title, BorderLayout.CENTER);
+        titleRow.add(runningTotalLabel, BorderLayout.EAST);
 
         JPanel scores = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
         scores.setOpaque(false);
@@ -80,7 +90,7 @@ public class GameFrame extends JFrame {
         scores.add(backButton);
         scores.add(newGameButton);
 
-        top.add(title, BorderLayout.NORTH);
+        top.add(titleRow, BorderLayout.NORTH);
         top.add(scores, BorderLayout.SOUTH);
         return top;
     }
@@ -110,8 +120,9 @@ public class GameFrame extends JFrame {
         gamePanel.setOnScoreChange(this::updateScore);
         gamePanel.setOnGameOver(this::showGameOver);
         gamePanel.setOnUndoAvailabilityChange(backButton::setEnabled);
+        gamePanel.setOnChainPreviewChange(this::updateChainPreview);
         add(gamePanel, BorderLayout.CENTER);
-        bestLabel.setText("Best: " + bestScore);
+        bestLabel.setText("Best: " + Ladder.formatApprox(bestScore));
         updateScore(board.getScore());
         backButton.setEnabled(false);
         revalidate();
@@ -119,12 +130,16 @@ public class GameFrame extends JFrame {
     }
 
     private void updateScore(long score) {
-        scoreLabel.setText("Score: " + score);
+        scoreLabel.setText("Score: " + Ladder.formatApprox(score));
         if (score > bestScore) {
             bestScore = score;
-            bestLabel.setText("Best: " + bestScore);
+            bestLabel.setText("Best: " + Ladder.formatApprox(bestScore));
         }
         autosave();
+    }
+
+    private void updateChainPreview(String label) {
+        runningTotalLabel.setText(label == null ? " " : "→ " + label);
     }
 
     private void autosave() {

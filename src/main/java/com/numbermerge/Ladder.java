@@ -44,6 +44,25 @@ public final class Ladder {
         return (targetValue - lower < upper - targetValue) ? idx - 1 : idx;
     }
 
+    /**
+     * Abbreviates an arbitrary non-negative number (e.g. a cumulative score, which
+     * generally won't land exactly on a ladder rung) using the same tier suffixes as
+     * tile labels: under 1000 shown as-is, otherwise rounded to the nearest whole
+     * number in whichever thousand/million/billion/... group it falls into.
+     */
+    public static String formatApprox(long value) {
+        if (value < 1000) {
+            return Long.toString(value);
+        }
+        long scaled = value;
+        int tier = 0;
+        while (scaled >= 1000) {
+            scaled = Math.round(scaled / 1000.0);
+            tier++;
+        }
+        return scaled + tierSuffix(tier);
+    }
+
     private static long tierMultiplier(int tier) {
         long multiplier = 1;
         for (int i = 0; i < tier; i++) {

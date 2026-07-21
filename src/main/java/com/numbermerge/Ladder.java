@@ -1,5 +1,7 @@
 package com.numbermerge;
 
+import java.math.BigInteger;
+
 /**
  * The fixed progression of legal tile values: 2, 4, 8, ..., 1024, then 2k, 4k, ..., 1024k,
  * then 2m, 4m, ..., and so on. Addressed by a single non-negative "rung index"
@@ -8,20 +10,25 @@ package com.numbermerge;
  * Each tier's multiplier is 1000x the last (thousand/million/billion/...), so the raw
  * value resets to a round number at every tier boundary rather than continuing a pure
  * binary doubling (e.g. 1024 -> 2k is 1024 -> 2000, not 1024 -> 2048). That's intentional.
+ *
+ * Values use BigInteger rather than long/int: reachable values (and especially the
+ * cumulative score, which only ever grows) can climb well past what a 64-bit long can
+ * hold, and unlike primitive arithmetic, BigInteger never silently overflows/wraps.
  */
 public final class Ladder {
     private static final long[] MANTISSAS = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
     private static final String[] TIER_SUFFIXES = {
             "", "k", "m", "b", "t", "q", "Qi", "Sx", "Sp", "Oc", "No", "Dc"
     };
+    private static final BigInteger ONE_THOUSAND = BigInteger.valueOf(1000);
 
     private Ladder() {
     }
 
-    public static long valueAt(int rungIndex) {
+    public static BigInteger valueAt(int rungIndex) {
         int tier = rungIndex / MANTISSAS.length;
         int mantissaIdx = rungIndex % MANTISSAS.length;
-        return MANTISSAS[mantissaIdx] * tierMultiplier(tier);
+        return BigInteger.valueOf(MANTISSAS[mantissaIdx]).multiply(tierMultiplier(tier));
     }
 
     public static String label(int rungIndex) {
@@ -31,17 +38,18 @@ public final class Ladder {
     }
 
     /** Rounds an arbitrary positive value to the nearest legal rung. Ties round up. */
-    public static int rungIndexForValue(long targetValue) {
+    public static int rungIndexForValue(BigInteger targetValue) {
         int idx = 0;
-        while (valueAt(idx) < targetValue) {
+        while (valueAt(idx).compareTo(targetValue) < 0) {
             idx++;
         }
         if (idx == 0) {
             return 0;
         }
-        long upper = valueAt(idx);
-        long lower = valueAt(idx - 1);
-        return (targetValue - lower < upper - targetValue) ? idx - 1 : idx;
+        BigInteger upper = valueAt(idx);
+        BigInteger lower = valueAt(idx - 1);
+        boolean nearerToLower = targetValue.subtract(lower).compareTo(upper.subtract(targetValue)) < 0;
+        return nearerToLower ? idx - 1 : idx;
     }
 
     /**
@@ -50,25 +58,31 @@ public final class Ladder {
      * tile labels: under 1000 shown as-is, otherwise rounded to the nearest whole
      * number in whichever thousand/million/billion/... group it falls into.
      */
-    public static String formatApprox(long value) {
-        if (value < 1000) {
-            return Long.toString(value);
+    public static String formatApprox(BigInteger value) {
+        if (value.compareTo(ONE_THOUSAND) < 0) {
+            return value.toString();
         }
-        long scaled = value;
+        BigInteger scaled = value;
         int tier = 0;
-        while (scaled >= 1000) {
-            scaled = Math.round(scaled / 1000.0);
+        while (scaled.compareTo(ONE_THOUSAND) >= 0) {
+            scaled = roundedDivideByThousand(scaled);
             tier++;
         }
         return scaled + tierSuffix(tier);
     }
 
-    private static long tierMultiplier(int tier) {
-        long multiplier = 1;
-        for (int i = 0; i < tier; i++) {
-            multiplier *= 1000;
+    private static BigInteger roundedDivideByThousand(BigInteger value) {
+        BigInteger[] quotientAndRemainder = value.divideAndRemainder(ONE_THOUSAND);
+        BigInteger quotient = quotientAndRemainder[0];
+        BigInteger remainder = quotientAndRemainder[1];
+        if (remainder.multiply(BigInteger.TWO).compareTo(ONE_THOUSAND) >= 0) {
+            quotient = quotient.add(BigInteger.ONE);
         }
-        return multiplier;
+        return quotient;
+    }
+
+    private static BigInteger tierMultiplier(int tier) {
+        return ONE_THOUSAND.pow(tier);
     }
 
     private static String tierSuffix(int tier) {

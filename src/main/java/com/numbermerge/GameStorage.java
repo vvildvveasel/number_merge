@@ -1,6 +1,7 @@
 package com.numbermerge;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,7 +19,7 @@ public final class GameStorage {
         return Files.isRegularFile(SAVE_FILE);
     }
 
-    public static void save(Board board, long bestScore) {
+    public static void save(Board board, BigInteger bestScore) {
         StringBuilder sb = new StringBuilder();
         sb.append("score=").append(board.getScore()).append('\n');
         sb.append("bestScore=").append(bestScore).append('\n');
@@ -39,16 +40,20 @@ public final class GameStorage {
         }
     }
 
-    /** Returns null if there's no save file, or it can't be read/parsed. */
+    /** Returns null if there's no save file, or it can't be read/parsed/trusted. */
     public static Loaded load() {
         try {
             List<String> lines = Files.readAllLines(SAVE_FILE);
             if (lines.size() < 4 + Board.ROWS) return null;
 
-            long score = parseLongValue(lines.get(0), "score=");
-            long bestScore = parseLongValue(lines.get(1), "bestScore=");
-            int highestEverRungIndex = (int) parseLongValue(lines.get(2), "highestEverRungIndex=");
-            int windowFloor = (int) parseLongValue(lines.get(3), "windowFloor=");
+            BigInteger score = parseBigIntegerValue(lines.get(0), "score=");
+            BigInteger bestScore = parseBigIntegerValue(lines.get(1), "bestScore=");
+            int highestEverRungIndex = parseIntValue(lines.get(2), "highestEverRungIndex=");
+            int windowFloor = parseIntValue(lines.get(3), "windowFloor=");
+
+            // A negative score/bestScore is never legitimate - it means this save
+            // predates the BigInteger fix and was corrupted by a long overflow.
+            if (score.signum() < 0 || bestScore.signum() < 0) return null;
 
             int[][] rungIndices = new int[Board.ROWS][Board.COLS];
             for (int r = 0; r < Board.ROWS; r++) {
@@ -64,22 +69,31 @@ public final class GameStorage {
         }
     }
 
-    private static long parseLongValue(String line, String prefix) {
+    private static BigInteger parseBigIntegerValue(String line, String prefix) {
+        return new BigInteger(stripPrefix(line, prefix));
+    }
+
+    private static int parseIntValue(String line, String prefix) {
+        return Integer.parseInt(stripPrefix(line, prefix));
+    }
+
+    private static String stripPrefix(String line, String prefix) {
         if (line == null || !line.startsWith(prefix)) {
             throw new NumberFormatException("Malformed save line: " + line);
         }
-        return Long.parseLong(line.substring(prefix.length()).trim());
+        return line.substring(prefix.length()).trim();
     }
 
     /** Parsed save-file contents, ready to hand to Board.loadState(...). */
     public static final class Loaded {
         public final int[][] rungIndices;
-        public final long score;
-        public final long bestScore;
+        public final BigInteger score;
+        public final BigInteger bestScore;
         public final int highestEverRungIndex;
         public final int windowFloor;
 
-        Loaded(int[][] rungIndices, long score, long bestScore, int highestEverRungIndex, int windowFloor) {
+        Loaded(int[][] rungIndices, BigInteger score, BigInteger bestScore,
+               int highestEverRungIndex, int windowFloor) {
             this.rungIndices = rungIndices;
             this.score = score;
             this.bestScore = bestScore;

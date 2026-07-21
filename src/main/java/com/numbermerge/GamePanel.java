@@ -16,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.RoundRectangle2D;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,7 +53,7 @@ public class GamePanel extends JPanel {
     private boolean dragging = false;
     private boolean animating = false;
 
-    private Consumer<Long> onScoreChange;
+    private Consumer<BigInteger> onScoreChange;
     private Runnable onGameOver;
     private Consumer<Boolean> onUndoAvailabilityChange;
     private Consumer<String> onChainPreviewChange;
@@ -147,7 +148,7 @@ public class GamePanel extends JPanel {
         }
     }
 
-    public void setOnScoreChange(Consumer<Long> listener) {
+    public void setOnScoreChange(Consumer<BigInteger> listener) {
         this.onScoreChange = listener;
     }
 

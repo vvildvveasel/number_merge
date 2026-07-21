@@ -11,6 +11,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.math.BigInteger;
 
 public class GameFrame extends JFrame {
 
@@ -20,7 +21,7 @@ public class GameFrame extends JFrame {
     private final JLabel bestLabel = new JLabel("Best: 0");
     private final JLabel runningTotalLabel = new JLabel(" ");
     private final JButton backButton = new JButton("Back");
-    private long bestScore = 0;
+    private BigInteger bestScore = BigInteger.ZERO;
 
     public GameFrame() {
         super("Number Merge");
@@ -108,7 +109,7 @@ public class GameFrame extends JFrame {
         }
         board = new Board();
         board.loadState(loaded.rungIndices, loaded.score, loaded.highestEverRungIndex, loaded.windowFloor);
-        bestScore = Math.max(bestScore, loaded.bestScore);
+        bestScore = bestScore.max(loaded.bestScore);
         attachGamePanel();
     }
 
@@ -129,9 +130,9 @@ public class GameFrame extends JFrame {
         repaint();
     }
 
-    private void updateScore(long score) {
+    private void updateScore(BigInteger score) {
         scoreLabel.setText("Score: " + Ladder.formatApprox(score));
-        if (score > bestScore) {
+        if (score.compareTo(bestScore) > 0) {
             bestScore = score;
             bestLabel.setText("Best: " + Ladder.formatApprox(bestScore));
         }

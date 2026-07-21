@@ -1,5 +1,6 @@
 package com.numbermerge;
 
+import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** A single tile. Has a stable id so the UI can track it across moves for animation. */
@@ -14,7 +15,7 @@ public class Tile {
         this.rungIndex = rungIndex;
     }
 
-    public long value() {
+    public BigInteger value() {
         return Ladder.valueAt(rungIndex);
     }
 

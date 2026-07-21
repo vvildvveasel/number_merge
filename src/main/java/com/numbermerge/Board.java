@@ -1,5 +1,6 @@
 package com.numbermerge;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -25,7 +26,7 @@ public class Board {
 
     private final Tile[][] grid = new Tile[ROWS][COLS];
     private final Random rnd = new Random();
-    private long score = 0;
+    private BigInteger score = BigInteger.ZERO;
     private int highestEverRungIndex = 0;
     private int windowFloor = 0;
 
@@ -41,7 +42,7 @@ public class Board {
         return grid[row][col];
     }
 
-    public long getScore() {
+    public BigInteger getScore() {
         return score;
     }
 
@@ -54,7 +55,7 @@ public class Board {
     }
 
     /** Overwrites this board with previously-saved state, e.g. loaded from disk. */
-    public void loadState(int[][] rungIndices, long score, int highestEverRungIndex, int windowFloor) {
+    public void loadState(int[][] rungIndices, BigInteger score, int highestEverRungIndex, int windowFloor) {
         restoreSnapshot(new Snapshot(rungIndices, score, highestEverRungIndex, windowFloor));
     }
 
@@ -94,9 +95,9 @@ public class Board {
 
     /** Computes what merging this chain would produce, without mutating the board. */
     public int previewMergeRungIndex(List<Pos> chain) {
-        long sum = 0;
+        BigInteger sum = BigInteger.ZERO;
         for (Pos p : chain) {
-            sum += grid[p.row][p.col].value();
+            sum = sum.add(grid[p.row][p.col].value());
         }
         return Ladder.rungIndexForValue(sum);
     }
@@ -117,7 +118,7 @@ public class Board {
         Pos last = chain.get(chain.size() - 1);
         grid[last.row][last.col].rungIndex = resultRung;
 
-        score += Ladder.valueAt(resultRung);
+        score = score.add(Ladder.valueAt(resultRung));
 
         List<SweptTile> swept = new ArrayList<>();
         if (resultRung > highestEverRungIndex) {
@@ -287,11 +288,11 @@ public class Board {
     /** An opaque, immutable capture of the board's full state for a single-step undo. */
     public static final class Snapshot {
         private final int[][] rungIndices;
-        private final long score;
+        private final BigInteger score;
         private final int highestEverRungIndex;
         private final int windowFloor;
 
-        private Snapshot(int[][] rungIndices, long score, int highestEverRungIndex, int windowFloor) {
+        private Snapshot(int[][] rungIndices, BigInteger score, int highestEverRungIndex, int windowFloor) {
             this.rungIndices = rungIndices;
             this.score = score;
             this.highestEverRungIndex = highestEverRungIndex;

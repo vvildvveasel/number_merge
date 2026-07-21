@@ -1,6 +1,7 @@
 package com.numbermerge;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -73,26 +74,38 @@ public class GameFrame extends JFrame {
         titleRow.add(title, BorderLayout.CENTER);
         titleRow.add(runningTotalLabel, BorderLayout.EAST);
 
-        JPanel scores = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
-        scores.setOpaque(false);
+        JPanel scoreRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        scoreRow.setOpaque(false);
         for (JLabel label : new JLabel[]{scoreLabel, bestLabel}) {
             label.setFont(label.getFont().deriveFont(Font.BOLD, 16f));
             label.setForeground(Color.WHITE);
             label.setHorizontalAlignment(SwingConstants.CENTER);
         }
+        scoreRow.add(scoreLabel);
+        scoreRow.add(bestLabel);
+
         backButton.setEnabled(false);
         backButton.addActionListener(e -> gamePanel.undo());
 
         JButton newGameButton = new JButton("New Game");
         newGameButton.addActionListener(e -> startNewGame());
 
-        scores.add(scoreLabel);
-        scores.add(bestLabel);
-        scores.add(backButton);
-        scores.add(newGameButton);
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        buttonRow.setOpaque(false);
+        buttonRow.add(backButton);
+        buttonRow.add(newGameButton);
+
+        scoreRow.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        buttonRow.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+
+        JPanel bottomRows = new JPanel();
+        bottomRows.setOpaque(false);
+        bottomRows.setLayout(new BoxLayout(bottomRows, BoxLayout.Y_AXIS));
+        bottomRows.add(scoreRow);
+        bottomRows.add(buttonRow);
 
         top.add(titleRow, BorderLayout.NORTH);
-        top.add(scores, BorderLayout.SOUTH);
+        top.add(bottomRows, BorderLayout.SOUTH);
         return top;
     }
 

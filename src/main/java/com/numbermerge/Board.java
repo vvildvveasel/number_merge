@@ -18,11 +18,13 @@ public class Board {
     // above the current floor, the floor advances by one and anything below the new
     // floor is swept. Smaller = more aggressive pressure to keep merging instead of
     // letting low tiles sit. Intended to become a player-facing difficulty setting later.
-    private static final int DIFFICULTY_RANGE = 12;
+    private static final int DIFFICULTY_RANGE = 14;
 
     // Relative likelihood of spawning at floor, floor+1, floor+2, floor+3, floor+4 -
-    // heavily weighted toward the floor (e.g. far more 2's than 4's than ... than 32's).
-    private static final int[] SPAWN_WEIGHTS = {16, 8, 4, 2, 1};
+    // a linear taper (rather than a steep halving) so higher tiers show up more
+    // often, widening the spread of values in play at once and making matches harder
+    // to find. Floor is still the most common, just less dominant than before.
+    private static final int[] SPAWN_WEIGHTS = {5, 4, 3, 2, 1};
 
     private final Tile[][] grid = new Tile[ROWS][COLS];
     private final Random rnd = new Random();
@@ -82,7 +84,11 @@ public class Board {
         windowFloor = snapshot.windowFloor;
     }
 
-    /** Whether the given in-progress chain can legally be extended by candidate. */
+    /**
+     * Whether the given in-progress chain can legally be extended by candidate. The
+     * very first link (starting tile to second tile) must be an exact value match;
+     * every link after that may be an exact match or exactly the next rung up.
+     */
     public boolean canExtend(List<Pos> chain, Pos candidate) {
         if (chain.isEmpty()) return true;
         if (chain.contains(candidate)) return false;
@@ -90,6 +96,9 @@ public class Board {
         if (!last.isAdjacentTo(candidate)) return false;
         int prevRung = grid[last.row][last.col].rungIndex;
         int candidateRung = grid[candidate.row][candidate.col].rungIndex;
+        if (chain.size() == 1) {
+            return candidateRung == prevRung;
+        }
         return candidateRung == prevRung || candidateRung == prevRung + 1;
     }
 
@@ -192,7 +201,11 @@ public class Board {
     // Each offset visits an adjacent pair exactly once (right, down, down-right, down-left).
     private static final int[][] HALF_NEIGHBOR_OFFSETS = {{0, 1}, {1, 0}, {1, 1}, {1, -1}};
 
-    /** True if at least one adjacent pair on the board could start/continue a legal chain. */
+    /**
+     * True if at least one adjacent pair on the board could start a legal chain. Since
+     * the first link of any chain must be an exact value match, this only needs to
+     * look for equal-valued neighbors - a chain can never begin on an off-by-one pair.
+     */
     public boolean hasValidMove() {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
@@ -202,7 +215,7 @@ public class Board {
                     int nc = c + offset[1];
                     if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
                     int otherRung = grid[nr][nc].rungIndex;
-                    if (Math.abs(otherRung - rung) <= 1) {
+                    if (otherRung == rung) {
                         return true;
                     }
                 }
